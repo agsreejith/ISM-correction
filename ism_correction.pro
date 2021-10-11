@@ -62,7 +62,7 @@ function mg2_noism,flux_c,tds,dwl,fwhm,Mgaratio,MgII2w,sigmaMg22,MgII1w,sigmaMg2
     mg2_wst = ((MgII2w+MgII1w)/2.0)-(dwl)
     mg2_wen = ((MgII2w+MgII1w)/2.0)+(dwl)
   endelse
-
+  ;stop
   flux_noism[1,*]=flux_noism[1,*]*tds[0,*]
 
   wave_noism=flux_c[0,*]
@@ -101,7 +101,7 @@ function mg2_noism,flux_c,tds,dwl,fwhm,Mgaratio,MgII2w,sigmaMg22,MgII1w,sigmaMg2
   return,mg2noism 
 end
 
-function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2
+function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2,ismabs,ispl=ispl
   vc    = 299792.458d0      ;speed of light in km/s
   ;Parameters for MgII
   MgII1w      = 2795.5280 ;default value
@@ -110,9 +110,9 @@ function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2
   MgII2w      = 2802.7050 ;default value
   MgII2_loggf = -0.218    ;-0.210 VALD/NIST
   MgII2_stark =-5.680     ;Stark damping constant
-  sigmaMg21   = 0.288
-  sigmaMg22   = 0.257
-  ISM_b_Mg2   = 3         ;km/s
+  sigmaMg21   = 0.22;0.288
+  sigmaMg22   = 0.232;0.257
+  ;ISM_b_Mg2   = 3         ;km/s
   fractionMg2 = 0.825     ;(Frisch & Slavin 2003; this is the fraction of Mg in the ISM that is singly ionised)
   Mg_abn      = -5.33     ;(Frisch & Slavin 2003; this is the ISM abundance of Mg)
   if dwl le (MgII2w-MgII1w) then begin
@@ -133,10 +133,17 @@ function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2
   absorberMg2=create_struct('ion','MG22','N',n_mg2,'B',ISM_b_Mg2,'Z',0.0)
   lineMg2=create_struct('ion','Mg22','wave',MgII2w+MgII2w*vr_ISM/vc,'F',10^MgII2_loggf,'gamma',10^MgII2_stark)
   ISMMg22=voigtq(flux_noism[0,*],absorberMg2,lineMg2)
-
-  ISM = ISMMg21*ISMMg22
-  flux_absorption = ISM ;* n_flux
-  spectra=flux_noism[1,*]*flux_absorption
+  if ispl eq 0 then begin
+    ISM = ISMMg21*ISMMg22
+    flux_absorption = ISM ;* n_flux
+    spectra=flux_noism[1,*]*flux_absorption
+    ismabs =flux_noism[1,*]-spectra
+  endif else begin
+    spectra = flux_noism[1,*]-ismabs
+    lt0 = where(spectra lt 0)
+    spectra[lt0]=0.0
+  endelse
+  
   wave=flux_noism[0,*]
   ;spectra=flux[1,*]
   wave_new          = reform(wave)
@@ -170,7 +177,8 @@ function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2
     mg2hk=trapz_error(mg2_wave,mg2_flux,mg2_error)
     mg2=mg2hk[0]
   endelse
-  return,mg2
+  mg2ism={flux:mg2,ism:ismabs}
+  return,mg2ism
 end
 
 pro ism_correction,Teff=teff,Radius=Radius,Rmg=Rmg,mghsigma=mghsigma,mgksigma=mgksigma,$
@@ -197,8 +205,8 @@ pro ism_correction,Teff=teff,Radius=Radius,Rmg=Rmg,mghsigma=mghsigma,mgksigma=mg
   MgII2w      = 2802.7050 ;default value
   MgII2_loggf = -0.218    ;-0.210 VALD/NIST
   MgII2_stark =-5.680     ;Stark damping constant
-  sigmaMg21   = 0.288
-  sigmaMg22   = 0.257
+  sigmaMg21   = 0.22;0.288
+  sigmaMg22   = 0.232;0.257
   ISM_b_Mg2   = 3         ;km/s
   fractionMg2 = 0.825     ;(Frisch & Slavin 2003; this is the fraction of Mg in the ISM that is singly ionised)
   Mg_abn      = -5.33     ;(Frisch & Slavin 2003; this is the ISM abundance of Mg)
@@ -375,27 +383,41 @@ pro ism_correction,Teff=teff,Radius=Radius,Rmg=Rmg,mghsigma=mghsigma,mgksigma=mg
   ;Rmg=0
 
   if (Rmg eq '-9.9') then begin
-    if stype eq 'F0V' or'F1V' or stype eq 'F2V' or stype eq 'F3V' or stype eq 'F4V' or $
-    stype eq 'F5V' or stype eq 'F6V' or stype eq 'F7V' or stype eq 'F8v' or stype eq 'G0V' $
-    or stype eq 'G1V' or stype eq 'G2V' or stype eq 'G5V' or stype eq 'G8V' then begin
+    if stype eq 'F0V' or'F1V' or stype eq 'F2V' or stype eq 'F3V' $
+      or stype eq 'F4V' or stype eq 'F5V' or stype eq 'F6V' $
+      or stype eq 'F7V' or stype eq 'F8V' or stype eq 'F9V' $
+      or stype eq 'F9.5V' or stype eq 'G0V' or stype eq 'G1V' $
+      or stype eq 'G2V' or stype eq 'G3V' or stype eq 'G4V' $
+      or stype eq 'G5V' or stype eq 'G6V' or stype eq 'G7V' $
+      or stype eq 'G8V' or stype eq 'G9V' then begin
       c1 = 0.87
       c2 = 5.73
       Rmg=10^(c1*logr+c2)
-    endif  else if stype eq 'K5V' or stype eq 'K4V' or stype eq 'K3V' or stype eq 'K2V' $
-    or stype eq 'K1V' or stype eq 'K0V' then begin
+    endif  else if stype eq 'K9V' or stype eq 'K8V' or stype eq 'K7V' $
+      or stype eq 'K6.5V' or stype eq 'K6V' or stype eq 'K5.5V' $
+      or stype eq 'K5V' or stype eq 'K4.5V' or stype eq 'K4V' $
+      or stype eq 'K3.5V' or stype eq 'K3V' or stype eq 'K2.5V'$
+      or stype eq 'K2V' or stype eq 'K1.5V' $
+      or stype eq 'K1V' or stype eq 'K0V' then begin
       c1 = 1.01
       c2 = 6.00
       Rmg=10^(c1*logr+c2)
-    endif else if stype eq 'M5V' or stype eq 'M4V' or stype eq 'M3V' or stype eq 'M2V' $
-    or stype eq 'M1V' or stype eq 'M0V' then begin
+    endif else if stype eq 'M9.5V' or stype eq 'M9V' or stype eq 'M8.5V' $
+      or stype eq 'M8V' or stype eq 'M7.5V' or stype eq 'M7V' $
+      or stype eq 'M6.5V' or stype eq 'M6V' or stype eq 'M5.5V' $
+      or stype eq 'M5V' or stype eq 'M4.5V' or stype eq 'M4V' $
+      or stype eq 'M3.5V' or stype eq 'M3V' or stype eq 'M2.5V'$
+      or stype eq 'M2V' or stype eq 'M1.5V' $
+      or stype eq 'M1V' or stype eq 'M0V' then begin
       c1 = 1.59
       c2 = 6.96
       Rmg=10^(c1*logr+c2)
     endif else begin
       Rmg=0
     endelse
+    Rmg = Rmg*4*!pi 
   endif
-  E=Rmg*AU^2*Radius^2
+  E=Rmg*AU^2
   WL=flux[0,*]
   Rp=dblarr(n_elements(WL))
   Rp=Rp+bb_td
@@ -416,19 +438,29 @@ pro ism_correction,Teff=teff,Radius=Radius,Rmg=Rmg,mghsigma=mghsigma,mgksigma=mg
   mg2_ism_flux=dblarr(2)
   tds_noism=dblarr(2)
   tds_ism=dblarr(2)
+  ismabs=dblarr(n_elements(WL))
   mg2k_wst = MgII1w-(dwl/2.0d0)
   mg2k_wen = MgII1w+(dwl/2.0d0)
   mg2h_wst = MgII2w-(dwl/2.0d0)
   mg2h_wen = MgII2w+(dwl/2.0d0)
+  
   for k=0,1 do begin
     tdval=(1-(td[k,*]/100.0))
     mg2noism=mg2_noism(flux,tdval,dwl,fwhm,Mgratio,MgII2w,sigmaMg22,MgII1w,sigmaMg21,E)
     mg2_noism_val=mg2noism.interflux
     flux_return=mg2noism.flux
     mg2_noism_flux[k]=mg2_noism_val
-    mg2_ism_flux[k]=mg2_ism(flux_return,dwl,MgII2w,MgII1w,fwhm,vr_ISM,nmg2,ISM_b_Mg2)
+    if k gt 0 then isplanet = 1 else isplanet = 0
+    mg2ism=mg2_ism(flux_return,dwl,MgII2w,MgII1w,fwhm,vr_ISM,nmg2,ISM_b_Mg2,ismabs,ispl=isplanet)
+    mg2_ism_flux[k]=mg2ism.flux
+    ismabs = mg2ism.ism
     tds_noism[k]=1.-(mg2_noism_flux[k]/mg2_noism_flux[0])
-    tds_ism[k]=1.-(mg2_ism_flux[k]/mg2_ism_flux[0])
+    if (mg2_ism_flux[k] gt 0 and mg2_ism_flux[0] gt 0) then begin
+      tds_ism[k]=1.-(mg2_ism_flux[k]/mg2_ism_flux[0])
+    endif else begin
+      tds_ism[k] = 0.0
+    endelse
+    
   endfor
   tds_diff=tds_ism[1]-tds_noism[1]
   print,'Difference in transit depth [%]',tds_diff*100
@@ -462,7 +494,7 @@ pro ism_correction,Teff=teff,Radius=Radius,Rmg=Rmg,mghsigma=mghsigma,mgksigma=mg
     printf,loglun,'Resolution [A]                : ',fwhm 
     printf,loglun,'Integration bin [A]           : ',dwl*2.0
     printf,loglun,'Output'
-    print,loglun,'Difference in transit depth [%]: ',tds_diff*100
+    printf,loglun,'Difference in transit depth [%]: ',tds_diff*100
     close,loglun
   endif  
 end
