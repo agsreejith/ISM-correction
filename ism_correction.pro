@@ -133,6 +133,7 @@ function mg2_ism,flux_noism,dwl,MgII2w,MgII1w,fwhm,vr_ISM,n_mg2,ISM_b_Mg2,ismabs
   absorberMg2=create_struct('ion','MG22','N',n_mg2,'B',ISM_b_Mg2,'Z',0.0)
   lineMg2=create_struct('ion','Mg22','wave',MgII2w+MgII2w*vr_ISM/vc,'F',10^MgII2_loggf,'gamma',10^MgII2_stark)
   ISMMg22=voigtq(flux_noism[0,*],absorberMg2,lineMg2)
+  ispl = 0
   if ispl eq 0 then begin
     ISM = ISMMg21*ISMMg22
     flux_absorption = ISM ;* n_flux
