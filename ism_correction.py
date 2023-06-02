@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# pip install idlsave
-# pip install plotly
-
-#from IPython import embed
-
 import sys
 import idlsave
 import numpy as np
@@ -12,7 +6,6 @@ import matplotlib.pyplot as plt
 import astropy.modeling.functional_models as am
 import astropy.constants as ac
 from scipy.ndimage import convolve1d
-#import voigt
 import scipy.special as ss
 import scipy.constants as sc
 
@@ -26,10 +19,8 @@ Execution
 To run the code, execute from the terminal:
 $ ./ism_correction.py
 
-
 Notes
 -----
-
 
 Package requirements
 --------------------
@@ -51,14 +42,14 @@ Sreejith et al. (2021)
 """
 
 # Constants:
-rsun  = ac.R_sun.cgs.value    # Sun radius,        cm
-AU    = ac.au.cgs.value       # Astronomical Unit, cm
+rsun  = ac.R_sun.cgs.value           # Sun radius,        cm
+AU    = ac.au.cgs.value              # Astronomical Unit, cm
 vc    = ac.c.to("km/s").value        # Speed of light, km/s
 c0    = ac.c.cgs.value               # Speed of light, cm/s
 cA    = ac.c.to("angstrom/s").value  # Speed of light, angstrom/s
-sigma = ac.sigma_sb.cgs.value # Stefan-Boltzmann constant, erg/(cm**2 s K**4)
-k_B   = ac.k_B.cgs.value      # Boltzmann constant, erg/K = g cm**2/(s**2 K)
-N_A   = ac.N_A.value          # Avagadro constant, mol-1
+sigma = ac.sigma_sb.cgs.value        # Stefan-Boltzmann constant, erg/(cm**2 s K**4)
+k_B   = ac.k_B.cgs.value             # Boltzmann constant, erg/K = g cm**2/(s**2 K)
+N_A   = ac.N_A.value                 # Avagadro constant, mol-1
 
 # Parameters for MgII:
 
@@ -310,8 +301,6 @@ def voigtq(wavelength, absorber, line):
     return np.exp(-tau)
 
 
-###########################################
-
 def find_nearest(array, value):
     """
     Find the nearest value in an array
@@ -320,7 +309,6 @@ def find_nearest(array, value):
     idx   = (np.abs(array - value)).argmin()
     return idx
 
-#########################################
 
 def trapz_error(wavelength,flux, error):
     """
@@ -338,8 +326,6 @@ def trapz_error(wavelength,flux, error):
     #var   = np.sum(0.25 * (ddwl * error)**2)
 
     return integ#, np.sqrt(var)
-
-#########################################
 
 def gaussbroad(w,s,hwhm):
     #Smooths a spectrum by convolution with a gaussian of specified hwhm.
@@ -384,13 +370,11 @@ def gaussbroad(w,s,hwhm):
     sout = sout[npad:npad+len(w)]  #trim to original data/length
     return sout	 #return broadened spectrum.
 
-#########################################
 
 def waveres(wave,spectra,fwhm):
     smoothedflux = gaussbroad(wave,spectra,fwhm/2.0)
     return wave, smoothedflux
 
-#########################################
 
 def mg2_noism(flux,tds,dwl,fwhm,Mgaratio,MgII2w,sigmaMg22,MgII1w,sigmaMg21,E):
     flux_noism = np.zeros((2,np.size(flux[0])))
@@ -449,7 +433,6 @@ def mg2_noism(flux,tds,dwl,fwhm,Mgaratio,MgII2w,sigmaMg22,MgII1w,sigmaMg21,E):
 
     return flux_noism, mg2_noism
 
-#########################################
 
 def mg2_ism(flux_noism, dwl, MgII2w, MgII1w, fwhm, vr_ISM, n_mg2, ISM_b_Mg2):
     if dwl <= (MgII2w-MgII1w):
@@ -525,8 +508,6 @@ def mg2_ism(flux_noism, dwl, MgII2w, MgII1w, fwhm, vr_ISM, n_mg2, ISM_b_Mg2):
 
     return mg2
 
-#########################################
-
 def read(msg, default=-9.9):
     """
     Read value from prompt. Return float.
@@ -535,8 +516,6 @@ def read(msg, default=-9.9):
     if val == "":
         return default
     return np.float(val)
-
-#########################################
 
 def main():
     """
@@ -708,10 +687,12 @@ def main():
 
         logfile.write(log)
 
-    # Read from input parameters:
+'''
+# Read from input parameters:
 #  elif inputpara:
+To be implemented
+'''
       
-
 
 if __name__ == "__main__":
   main()
