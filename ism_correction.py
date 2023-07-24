@@ -38,7 +38,7 @@ Reference
 Impact of MgII interstellar medium absorption on near-ultraviolet exoplanet
  transit measurementsOn the effect of ISM absorption on stellar activity
  measurements and its relevance for exoplanet studies.
-Sreejith et al. (2021)
+Sreejith et al. (2023)
 """
 
 # Constants:
